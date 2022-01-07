@@ -1,16 +1,22 @@
 const express = require("express");
-const mongoose = require("mongoose");
 
 const app = express();
-// connexion a la base de données
+app.use(express.json());
+
+const mongoose = require("mongoose");
+const sauceRoutes = require("./routes/sauce");
+
+const userRoutes = require("./routes/user");
+
+const path = require("path");
+
+//  Connexion à la base de donnée
 mongoose
-	.connect("mongodb+srv://PiicanteP6:PicanteoC2021@cluster0.shyka.mongodb.net/picante?retryWrites=true&w=majority", { useNewUrlParser: true, useUnifiedTopology: true })
+	.connect("mongodb+srv://fab33:lauret33@cluster0.tsqyq.mongodb.net/picanteBd?retryWrites=true&w=majority", { useNewUrlParser: true, useUnifiedTopology: true })
 	.then(() => console.log("Connexion à MongoDB réussie !"))
 	.catch(() => console.log("Connexion à MongoDB échouée !"));
 
-app.use(express.json());
-
-// gere les erreurs CORS
+// Ajout des entetes pour les erreurs CORS
 app.use((req, res, next) => {
 	res.setHeader("Access-Control-Allow-Origin", "*");
 	res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content, Accept, Content-Type, Authorization");
@@ -18,8 +24,8 @@ app.use((req, res, next) => {
 	next();
 });
 
-app.use((req, res) => {
-	res.json({ message: "Votre requête a bien été reçue !" });
-});
+app.use("/api/sauces", sauceRoutes);
+app.use("/images", express.static(path.join(__dirname, "images")));
+app.use("/api/auth", userRoutes);
 
 module.exports = app;
