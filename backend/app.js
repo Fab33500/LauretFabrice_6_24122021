@@ -4,6 +4,11 @@ const app = express();
 app.use(express.json());
 
 const mongoose = require("mongoose");
+
+// debug mongoose
+console.log("-----------------debug mongoose-----------");
+mongoose.set("debug", true);
+
 const sauceRoutes = require("./routes/sauce");
 
 const userRoutes = require("./routes/user");
