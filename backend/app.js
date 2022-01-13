@@ -1,10 +1,19 @@
 const express = require("express");
 
+// import morgan(loggerhttp)
+const morgan = require("morgan");
+
 const app = express();
-app.use(express.json());
+app.use(express.json("dev"));
+
+// import dotenv pour utiliser les variables d'environnement
+const dotenv = require("dotenv");
+const result = dotenv.config();
+
+// log req et res
+app.use(morgan("dev"));
 
 const mongoose = require("mongoose");
-
 // debug mongoose
 console.log("-----------------debug mongoose-----------");
 mongoose.set("debug", true);
@@ -15,9 +24,12 @@ const userRoutes = require("./routes/user");
 
 const path = require("path");
 
-//  Connexion à la base de donnée
+//  Connexion à la base de donnée avec des variables d'environnement
 mongoose
-	.connect("mongodb+srv://fab33:lauret33@cluster0.tsqyq.mongodb.net/picanteBd?retryWrites=true&w=majority", { useNewUrlParser: true, useUnifiedTopology: true })
+	.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_CLUSTER}.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`, {
+		useNewUrlParser: true,
+		useUnifiedTopology: true,
+	})
 	.then(() => console.log("Connexion à MongoDB réussie !"))
 	.catch(() => console.log("Connexion à MongoDB échouée !"));
 

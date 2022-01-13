@@ -1,6 +1,11 @@
 const http = require("http");
 const app = require("./app");
 
+// import dotenv pour utiliser les variables d'environnement
+const dotenv = require("dotenv");
+const result = dotenv.config();
+const SERVER_PORT = process.env.SERVER_PORT;
+
 const normalizePort = (val) => {
 	const port = parseInt(val, 10);
 
@@ -12,7 +17,7 @@ const normalizePort = (val) => {
 	}
 	return false;
 };
-const port = normalizePort(process.env.PORT || "3000");
+const port = normalizePort(process.env.PORT || SERVER_PORT);
 app.set("port", port);
 
 const errorHandler = (error) => {
