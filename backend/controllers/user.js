@@ -14,8 +14,6 @@ const User = require("../models/User");
 
 exports.signup = (req, res, next) => {
 	const emailCryptoJs = cryptoJs.HmacSHA256(req.body.email, process.env.CRYPTOJS_EMAIL).toString();
-	// ou comme ca??
-	// const emailCryptoJs = cryptoJs.HmacSHA256(req.body.email, `${process.env.CRYPTOJS_EMAIL}`).toString();
 
 	bcrypt
 		.hash(req.body.password, 10)
@@ -48,7 +46,7 @@ exports.login = (req, res, next) => {
 					}
 					res.status(200).json({
 						userId: user._id,
-						token: jwt.sign({ userId: user._id }, process.env.BCRYPT_PASSWORD, { expiresIn: "24h" }),
+						token: jwt.sign({ userId: user._id }, process.env.JWT_PASSWORD, { expiresIn: "24h" }),
 					});
 				})
 				.catch((error) => res.status(500).json({ error }));
