@@ -22,12 +22,15 @@ exports.createSauce = (req, res, next) => {
 // Modification d'une sauce
 exports.modifySauce = (req, res, next) => {
 	// si image modifiée
+
 	const sauceObject = req.file
 		? {
 				...JSON.parse(req.body.sauce),
 				imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
 		  }
 		: { ...req.body };
+	console.log("----------------req");
+	console.log(sauceObject);
 
 	if (req.file) {
 		// supression de l'ancienne image si image modifiée
@@ -70,24 +73,25 @@ exports.deleteSauce = (req, res, next) => {
 			fs.unlink(`images/${filename}`, () => {
 				// compare l'utilisateur qui fait la requete à user ID de la sauce
 				Sauce.findOne({ _id: req.params.id }).then(() => {
-					if (!sauce) {
+					if (!sauce.userId) {
 						return res.status(404).json({
-							error: new error("Sauce non trouvée"),
+							msg: "Sauce non trouvée",
 						});
 					}
 					// verifie que la suppression est faite par le propriétaire
-					if (sauce.userId !== req.auth.userId) {
+					else if (sauce.userId !== req.auth.userId) {
 						return res.status(401).json({
-							error: new error("Requette non authorisée"),
+							msg: "Requette non authorisée, vous n'etes pas le proprietaire de cette sauce",
 						});
 					}
+
 					Sauce.deleteOne({ _id: req.params.id })
 						.then(() => res.status(200).json({ msg: "Sauce supprimée" }))
 						.catch((error) => res.status(400).json({ error }));
 				});
 			});
 		})
-		.catch((error) => res.status(500).json({ error }));
+		.catch((error) => res.status(500).json({ msg: "Cette sauce n'existe pas !" }));
 };
 
 // Récupération d'une sauce de la Bd
@@ -117,7 +121,7 @@ exports.likeDislike = (req, res, next) => {
 					// like = +1
 					// si user n'est pas dans usersLiked & si like === 1
 					// methode includes pour verifier le tableau
-					if (!sauce.usersLiked.includes(req.body.userId) && req.body.like === 1) {
+					if (!sauce.usersLiked.includes(req.body.userId)) {
 						// mise à jour BDD
 						sauce
 							.updateOne({
@@ -128,6 +132,8 @@ exports.likeDislike = (req, res, next) => {
 							})
 							.then(() => res.status(201).json({ msg: "J'aime la sauce" }))
 							.catch((error) => res.status(400).json({ error }));
+					} else {
+						return res.status(400).json({ error: "Vous avez deja aimé la sauce" });
 					}
 					break;
 
@@ -135,7 +141,7 @@ exports.likeDislike = (req, res, next) => {
 					// dislike: -1
 					// si user n'est pas dans usersDisLiked & si dislike === -1
 
-					if (!sauce.usersDisliked.includes(req.body.userId) && req.body.like === -1) {
+					if (!sauce.usersDisliked.includes(req.body.userId)) {
 						// mise à jour BDD
 						sauce
 							.updateOne({
@@ -146,6 +152,8 @@ exports.likeDislike = (req, res, next) => {
 							})
 							.then(() => res.status(201).json({ msg: "Je n'aime pas la sauce" }))
 							.catch((error) => res.status(400).json({ error }));
+					} else {
+						return res.status(400).json({ error: "Vous avez deja détesté la sauce" });
 					}
 					break;
 
@@ -178,7 +186,12 @@ exports.likeDislike = (req, res, next) => {
 							})
 							.then(() => res.status(201).json({ msg: "Dislike sauce supprimée" }))
 							.catch((error) => res.status(400).json({ error }));
+					} else {
+						return res.status(400).json({ error });
 					}
+					break;
+				default:
+					return res.status(400).json({ msg: "non autorisé" });
 			}
 		})
 		.catch((error) => res.status(404).json({ error }));
