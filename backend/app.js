@@ -1,17 +1,25 @@
 const express = require("express");
 
+// -------------- securite ----------------
+// import helmet
+const helmet = require("helmet");
+
+//import express-mongo-sanitize
+const mongoSanitize = require("express-mongo-sanitize");
+
+// import HPP
+const hpp = require("hpp");
+
 // import morgan(loggerhttp)
 const morgan = require("morgan");
+// -----------------------------------------------
 
 const app = express();
-app.use(express.json("dev"));
+app.use(express.json());
 
 // import dotenv pour utiliser les variables d'environnement
 const dotenv = require("dotenv");
 const result = dotenv.config();
-
-// log req et res
-app.use(morgan("dev"));
 
 const mongoose = require("mongoose");
 // debug mongoose
@@ -41,7 +49,18 @@ app.use((req, res, next) => {
 	next();
 });
 
+// sécurise en définissant divers en-têtes HTTP
+app.use(helmet());
+//assainit les entrées contre les attaques par injection de sélecteur de requête
+app.use(mongoSanitize());
+// protege contre les attaques par pollution des paramètres HTTP
+app.use(hpp());
+// log req et res
+app.use(morgan("dev"));
+
 app.use("/api/sauces", sauceRoutes);
+
+// routage pour les images
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.use("/api/auth", userRoutes);
 
