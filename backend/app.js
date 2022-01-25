@@ -60,6 +60,9 @@ app.use(morgan("dev"));
 
 app.use("/api/sauces", sauceRoutes);
 
+// pour form data
+app.use(express.urlencoded({ extended: true }));
+
 // routage pour les images
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.use("/api/auth", userRoutes);

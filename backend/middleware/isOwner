@@ -1,0 +1,26 @@
+const auth = require("../middleware/auth");
+const Sauce = require("../models/Sauce");
+
+module.exports = (req, res, next) => {
+	Sauce.findOne({ _id: req.params.id })
+
+		.then((sauce) => {
+			// controle l'utilisateur qui fait la requete à user ID de la sauce
+			if (sauce.userId === req.auth.userId) {
+				if (!sauce.userId) {
+					return res.status(404).json({
+						msg: "Sauce non trouvée",
+					});
+				} else {
+					next();
+				}
+			}
+			// si la suppression n'est pas faite par le propriétaire
+			else {
+				return res.status(403).json({
+					msg: " vous n'etes pas le proprietaire de la sauce!!",
+				});
+			}
+		})
+		.catch((error) => res.status(500).json({ error }));
+};

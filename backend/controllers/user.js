@@ -1,8 +1,7 @@
 // import
 
 //  variables d'environnement
-const dotenv = require("dotenv");
-const result = dotenv.config();
+const dotenv = require("dotenv").config();
 
 // hash du mot de passe
 const bcrypt = require("bcrypt");

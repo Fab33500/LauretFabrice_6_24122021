@@ -2,106 +2,42 @@
 const Sauce = require("../models/Sauce");
 // gére les téléchargements et modifications d'images
 const fs = require("fs");
+const isOwner = require("../middleware/isOwner");
 
 // Création d'une nouvelle sauce
 exports.createSauce = (req, res, next) => {
 	const sauceObject = JSON.parse(req.body.sauce);
 	delete sauceObject._id;
 
+	// creation de la sauce uniquement si userId de la sauce est idendique à user Id du token
+
 	const sauce = new Sauce({
 		...sauceObject,
 		imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
+		likes: 0,
+		dislikes: 0,
 	});
 
-	sauce
-		.save()
-		.then(() => res.status(201).json({ message: "Sauce enregistré !" }))
-		.catch((error) => res.status(400).json({ error }));
-};
+	// verifie que les conditions sont reunies pour l'enregistrement de la sauce
+	if (sauceObject.userId === req.auth.userId && sauceObject.heat >= 0 && sauceObject.heat <= 10) {
+		sauce
+			.save()
+			.then(() => res.status(201).json({ message: "Sauce enregistré !" }))
+			.catch((error) => res.status(400).json({ error }));
+	} else {
+		const filename = sauce.imageUrl.split("/images")[1];
 
-// Modification d'une sauce
-exports.modifySauce = (req, res, next) => {
-	// si image modifiée
-
-	const sauceObject = req.file
-		? {
-				...JSON.parse(req.body.sauce),
-				imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
-		  }
-		: { ...req.body };
-	console.log("----------------req");
-	console.log(sauceObject);
-
-	if (req.file) {
-		// supression de l'ancienne image si image modifiée
-		Sauce.findOne({ _id: req.params.id })
-			.then((sauce) => {
-				// Récupération de la photo existante à supprimer dans la Bd
-				const filename = sauce.imageUrl.split("/images/")[1];
-
-				// suppression de l'image dans le dossier images
-				fs.unlink(`images/${filename}`, () => {
-					// compare l'utilisateur qui fait la requete à user ID de la sauce
-
-					if (!sauce) {
-						return res.status(404).json({
-							error: new error("Sauce non trouvée"),
-						});
-					}
-					// verifie que la suppression est faite par le propriétaire
-					if (sauce.userId !== req.auth.userId) {
-						return res.status(401).json({
-							error: new error("Requette non authorisée"),
-						});
-					}
-				});
-			})
-			.catch((error) => res.status(500).json({ error }));
+		// suppression de l'image dans le dossier images
+		fs.unlink(`images/${filename}`, (error) => {
+			if (error) throw error;
+		});
+		return res.status(400).json({
+			msg: "Vous ne pouvez pas creer cette sauce ",
+		});
 	}
-
-	Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
-		.then(() => res.status(200).json({ message: "sauce modifié !" }))
-		.catch((error) => res.status(400).json({ error }));
 };
 
-// Suppression d'une sauce
-exports.deleteSauce = (req, res, next) => {
-	// supression des images
-	Sauce.findOne({ _id: req.params.id })
-		.then((sauce) => {
-			const filename = sauce.imageUrl.split("/images/")[1];
-			fs.unlink(`images/${filename}`, () => {
-				// compare l'utilisateur qui fait la requete à user ID de la sauce
-				Sauce.findOne({ _id: req.params.id }).then(() => {
-					if (!sauce.userId) {
-						return res.status(404).json({
-							msg: "Sauce non trouvée",
-						});
-					}
-					// verifie que la suppression est faite par le propriétaire
-					else if (sauce.userId !== req.auth.userId) {
-						return res.status(401).json({
-							msg: "Requette non authorisée, vous n'etes pas le proprietaire de cette sauce",
-						});
-					}
-
-					Sauce.deleteOne({ _id: req.params.id })
-						.then(() => res.status(200).json({ msg: "Sauce supprimée" }))
-						.catch((error) => res.status(400).json({ error }));
-				});
-			});
-		})
-		.catch((error) => res.status(500).json({ msg: "Cette sauce n'existe pas !" }));
-};
-
-// Récupération d'une sauce de la Bd
-exports.getOneSauce = (req, res, next) => {
-	Sauce.findOne({ _id: req.params.id })
-		.then((sauce) => res.status(200).json(sauce))
-		.catch((error) => res.status(404).json({ error }));
-};
-
-// Récupération de toutes les sauces de la Bd
+// lire toutes les sauces de la Bd
 exports.getAllSauce = (req, res, next) => {
 	Sauce.find()
 		.then((sauces) => {
@@ -109,6 +45,75 @@ exports.getAllSauce = (req, res, next) => {
 			return res.status(200).json(sauces);
 		})
 		.catch((error) => res.status(400).json({ error }));
+};
+
+// lire une sauce de la Bd
+exports.getOneSauce = (req, res, next) => {
+	Sauce.findOne({ _id: req.params.id })
+		.then((sauce) => res.status(200).json(sauce))
+		.catch((error) => res.status(404).json({ error }));
+};
+
+// Modification d'une sauce
+exports.modifySauce = (req, res, next) => {
+	Sauce.findOne({ _id: req.params.id })
+		.then((sauce) => {
+			// comparaison de l'objet
+			const sauceObject = req.file
+				? {
+						...JSON.parse(req.body.sauce),
+						imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
+						// heat: req.body.heat,
+				  }
+				: { ...req.body };
+
+			if (isOwner) {
+				if (req.file) {
+					Sauce.findOne({ _id: req.params.id })
+						.then(() => {
+							// Récupération de la photo existante à supprimer dans la Bd
+							const filename = sauce.imageUrl.split("/images")[1];
+
+							// suppression de l'image dans le dossier images
+							fs.unlink(`images/${filename}`, (error) => {
+								if (error) throw error;
+							});
+						})
+						.catch((error) => res.status(404).json({ error }));
+				}
+
+				// Mise à jour dans BDD
+
+				// modification envoyées dans BDD
+				Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
+					.then(() => res.status(200).json({ msg: "sauce modifiée" }))
+					.catch((error) => res.status(404).json({ error }));
+			}
+		})
+		.catch((error) => res.status(403).json({ error }));
+};
+
+// Suppression d'une sauce
+exports.deleteSauce = (req, res, next) => {
+	// supression des images
+	Sauce.findOne({ _id: req.params.id })
+
+		.then((sauce) => {
+			const filename = sauce.imageUrl.split("/images/")[1];
+
+			// controle l'utilisateur qui fait la requete à user ID de la sauce
+			if (isOwner) {
+				// fs.unlink(`images/${filename}`,
+				fs.unlink(`images/${filename}`, (error) => {
+					if (error) throw error;
+				});
+
+				Sauce.deleteOne({ _id: req.params.id })
+					.then(() => res.status(200).json({ msg: "Sauce supprimée" }))
+					.catch((error) => res.status(400).json({ error }));
+			}
+		})
+		.catch((error) => res.status(500).json({ msg: "Cette sauce n'existe pas !" }));
 };
 
 // like & dislike
