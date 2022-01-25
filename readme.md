@@ -43,6 +43,8 @@ Clonez le projet
 
 ##### le Backend
 
+-   Creer un dossier "images"
+-   Modifiez le fichier ".env.example" en fichier ".env" et remplacer les x par vos elements.
 -   Ouvrir le terminal sur le dossier Backend.
 -   Pour utiliser le serveur, chargez le package nodemon : `npm install -g nodemon`.
 -   Puis lancez le serveur: `nodemon server`.
